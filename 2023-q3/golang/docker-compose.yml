@@ -1,9 +1,7 @@
 services:
   api1:
-    image: ""
-    hostname: ""
-    depends_on:
-      - db
+    build: "./app"
+    hostname: "api1"
     expose:
       - "80"
 
@@ -16,6 +14,4 @@ services:
     ports:
       - "9999:9999"
 
-  db:
-    image: postgres:latest
 

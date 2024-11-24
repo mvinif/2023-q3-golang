@@ -6,6 +6,6 @@ COPY . .
 RUN go mod download
 RUN go build app.go 
 
-EXPOSE 8080
+EXPOSE 80
 CMD ["./app"]
 

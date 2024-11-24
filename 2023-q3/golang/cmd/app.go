@@ -5,39 +5,48 @@ import (
     "net/http"
 )
 
-type pessoa struct {
+type readPerson struct {
     ID string `json:id`
-    Apelido string `json:apelido`
-    Nome string `json:nome`
-    Nascimento string `json:nascimento`
+    Nickname string `json:apelido`
+    Name string `json:nome`
+    Birthday string `json:nascimento`
     Stack []string `json:stack`
 }
 
-func validateData(p pessoa) {
-    if l := len(p.Apelido); l > 32 {
+type createPerson struct {
+    Nickname string `json:apelido`
+    Name string `json:nome`
+    Birthday string `json:nascimento`
+    Stack []string `json:stack`
+}
+
+func validate(p createPerson) bool {
+    if len(p.Nickname) > 32 {
         return false
     }
 
-    if l := len(p.Nome); l > 100 {
+    if len(p.Name) > 100 {
         return false
     }
+
+    return true
 }
 
 func main() {
     r := gin.Default()
 
     r.POST("/pessoas", func(c *gin.Context){
-        var novaPessoa pessoa
+        var newPerson person
 
-        if err := c.BindJSON(&novaPessoa); err != nil {
+        if err := c.BindJSON(&newPerson); err != nil {
             return
         }
 
         // validate Pessoa object
-        if validateData(novaPessoa) {
-            
+        if !validateData(newPerson) {
         }
-        c.JSON(http.StatusCreated, novaPessoa)
+
+        c.JSON(http.StatusCreated, newPerson)
     })
 
     r.GET("/pessoas/:id", func(c *gin.Context) {
