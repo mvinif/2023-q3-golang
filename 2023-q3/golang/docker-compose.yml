@@ -1,0 +1,21 @@
+services:
+  api1:
+    image: ""
+    hostname: ""
+    depends_on:
+      - db
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx.conf:ro
+    depends_on:
+      - api
+    ports:
+      - "9999:9999"
+
+  db:
+    image: postgres:latest
+
