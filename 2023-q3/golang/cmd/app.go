@@ -36,14 +36,14 @@ func main() {
     r := gin.Default()
 
     r.POST("/pessoas", func(c *gin.Context){
-        var newPerson person
+        var newPerson createPerson
 
         if err := c.BindJSON(&newPerson); err != nil {
             return
         }
 
         // validate Pessoa object
-        if !validateData(newPerson) {
+        if !validate(newPerson) {
         }
 
         c.JSON(http.StatusCreated, newPerson)
