@@ -21,12 +21,27 @@ type createPerson struct {
 }
 
 func validate(p createPerson) bool {
+
     if len(p.Nickname) > 32 {
         return false
-    }
+	}
+
+    if len(p.Nickname) == 0 {
+        return false
+	}
 
     if len(p.Name) > 100 {
         return false
+	}
+
+    if len(p.Name) == 0 {
+        return false
+	}
+
+    for _, s := range p.Stack {
+        if len(s) > 32 {
+            return false
+        }
     }
 
     return true
@@ -75,5 +90,5 @@ func main() {
         c.JSON(http.StatusOK, gin.H{ "message":"pong", })
     })
 
-    r.Run()
+    r.Run(":80")
 }

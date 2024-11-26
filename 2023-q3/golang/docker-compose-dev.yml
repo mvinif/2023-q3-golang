@@ -1,7 +1,6 @@
 services:
   api1:
     build: .
-    hostname: "api1"
 
   nginx:
     image: nginx:latest

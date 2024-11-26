@@ -1,18 +1,21 @@
 build:
 	docker build . -t golang-api:latest
 
-run_dev:
+run-dev:
 	docker compose -f docker-compose-dev.yml up -d
 
-stop_dev:
+run-dev2:
+	docker compose -f docker-compose-dev.yml up
+
+stop-dev:
 	docker compose -f docker-compose-dev.yml down
 
-reload_dev:
+reload-dev:
 	docker compose -f docker-compose-dev.yml down
 	make build
 	docker compose -f docker-compose-dev.yml up -d
 
-watch_dev:
+watch-dev:
 	docker compose -f docker-compose-dev.yml watch
 
 up:
