@@ -1,8 +1,12 @@
 package main
 
 import (
-    "github.com/gin-gonic/gin"
+    "fmt"
+    "os"
+    "context"
     "net/http"
+    "github.com/gin-gonic/gin"
+    "github.com/jackc/pgx/v5"
 )
 
 type readPerson struct {
@@ -49,6 +53,13 @@ func validate(p createPerson) bool {
 
 func main() {
     r := gin.Default()
+    connectionString := os.Getenv("DATABASE_URL")
+
+    conn, err := pgx.Connect(context.Background(), connectionString)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Unable to connect")
+    }
+    defer conn.Close(context.Background())
 
     r.POST("/pessoas", func(c *gin.Context){
         var newPerson createPerson
