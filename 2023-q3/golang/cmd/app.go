@@ -10,18 +10,18 @@ import (
 )
 
 type readPerson struct {
-    ID string `json:id`
-    Nickname string `json:apelido`
-    Name string `json:nome`
-    Birthday string `json:nascimento`
-    Stack []string `json:stack`
+    ID string `json:"id"`
+    Nickname string `json:"apelido"`
+    Name string `json:"nome"`
+    Birthday string `json:"nascimento"`
+    Stack []string `json:"stack"`
 }
 
 type createPerson struct {
-    Nickname string `json:apelido`
-    Name string `json:nome`
-    Birthday string `json:nascimento`
-    Stack []string `json:stack`
+    Nickname string `json:"apelido"`
+    Name string `json:"nome"`
+    Birthday string `json:"nascimento"`
+    Stack []string `json:"stack"`
 }
 
 func validate(p createPerson) bool {
@@ -57,7 +57,8 @@ func main() {
 
     conn, err := pgx.Connect(context.Background(), connectionString)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Unable to connect")
+        fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+        os.Exit(1)
     }
     defer conn.Close(context.Background())
 
@@ -70,6 +71,8 @@ func main() {
 
         // validate Pessoa object
         if !validate(newPerson) {
+            c.JSON(http.StatusBadRequest, gin.H{ "error": "Invalid person data", })
+            return
         }
 
         c.JSON(http.StatusCreated, newPerson)
@@ -87,18 +90,19 @@ func main() {
 
     r.GET("/pessoas", func(c *gin.Context) {
         // pessoas := []pessoa
-        // searchterm := c.Query("t")
-        c.JSON(http.StatusOK, gin.H{ 
-            "id":"pong", 
-            "apelido":"pong", 
-            "nome":"pong", 
-            "nascimento":"pong", 
-            "stack":"pong", 
-        })
+        searchTerm := c.Query("t")
+        var searchResult string
+        err = conn.QueryRow(context.Background(), "select * from person ").Scan(&searchResult)
+        c.String(http.StatusOK, fmt.Sprintf("%s", searchResult))
     })
 
     r.GET("/contagem-pessoas", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{ "message":"pong", })
+        var total int64
+        err = conn.QueryRow(context.Background(), "select count(*) from person").Scan(&total)
+        if err != nil {
+            c.JSON(http.StatusOK, gin.H{ "message": err, })
+        }
+        c.String(http.StatusOK, fmt.Sprintf("%d", total))
     })
 
     r.Run(":80")

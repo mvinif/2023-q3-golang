@@ -5,7 +5,9 @@ services:
     expose: 
       - "80"
     environment:
-      DATABASE_URL: "postgres://postgress:postgres@db:5432/apidb"
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/apidb"
+    depends_on:
+      - db
 
   nginx:
     hostname: "nginx"
