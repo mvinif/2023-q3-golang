@@ -7,6 +7,7 @@ import (
     "net/http"
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5"
+    "github.com/google/uuid"
 )
 
 type readPerson struct {
@@ -64,6 +65,7 @@ func main() {
 
     r.POST("/pessoas", func(c *gin.Context){
         var newPerson createPerson
+        uid := uuid.NewString()
 
         if err := c.BindJSON(&newPerson); err != nil {
             return
@@ -73,6 +75,18 @@ func main() {
         if !validate(newPerson) {
             c.JSON(http.StatusBadRequest, gin.H{ "error": "Invalid person data", })
             return
+        }
+        query := "insert into person values ($1, $2, $3, $4, $5::varchar[]);"
+        _, err := conn.Exec(context.Background(),
+			 query,
+			 uid,
+			 newPerson.Nickname,
+			 newPerson.Name,
+			 newPerson.Birthday,
+			 newPerson.Stack)
+
+        if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{ "error": err, })
         }
 
         c.JSON(http.StatusCreated, newPerson)
@@ -92,15 +106,15 @@ func main() {
         // pessoas := []pessoa
         searchTerm := c.Query("t")
         var searchResult string
-        err = conn.QueryRow(context.Background(), "select * from person ").Scan(&searchResult)
-        c.String(http.StatusOK, fmt.Sprintf("%s", searchResult))
+        err = conn.QueryRow(context.Background(), "select * from person").Scan(&searchResult)
+        c.String(http.StatusOK, fmt.Sprintf("%s %s", searchResult, searchTerm))
     })
 
     r.GET("/contagem-pessoas", func(c *gin.Context) {
         var total int64
         err = conn.QueryRow(context.Background(), "select count(*) from person").Scan(&total)
         if err != nil {
-            c.JSON(http.StatusOK, gin.H{ "message": err, })
+            c.JSON(http.StatusBadRequest, gin.H{ "error": err, })
         }
         c.String(http.StatusOK, fmt.Sprintf("%d", total))
     })
