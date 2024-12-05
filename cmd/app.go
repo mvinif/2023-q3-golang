@@ -93,21 +93,54 @@ func main() {
     })
 
     r.GET("/pessoas/:id", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{
-            "id":"pong", 
-            "apelido":"pong", 
-            "nome":"pong", 
-            "nascimento":"pong", 
-            "stack":"pong", 
-        })
+        id := c.Param("id")
+        if err := c.ShouldBindUri(&id); err != nil {
+            c.JSON(400, gin.H{"error":err.Error()})
+            return
+        }
+
+        uid, err := uuid.Parse(id)
+        if err != nil {
+            c.JSON(400, gin.H{"error":err.Error()})
+            return
+        }
+
+        query := "select id, nickname, name, birthday, stacks from person where id = $1"
+
+        var person readPerson
+        err = conn.QueryRow(context.Background(), query, uid).Scan(
+            &person.ID,
+            &person.Nickname,
+            &person.Name,
+            &person.Birthday,
+            &person.Stack)
+        if err != nil {
+            c.JSON(400, gin.H{"error":err.Error()})   
+            return
+        }
+
+        c.JSON(http.StatusOK, person)
     })
 
     r.GET("/pessoas", func(c *gin.Context) {
         // pessoas := []pessoa
         searchTerm := c.Query("t")
-        var searchResult string
-        err = conn.QueryRow(context.Background(), "select * from person").Scan(&searchResult)
-        c.String(http.StatusOK, fmt.Sprintf("%s %s", searchResult, searchTerm))
+        // var searchResult string
+        query := `select * from person where id like '%'||$1||'%' OR name like %$1% OR nickname like %$1%`
+        rows, err := conn.Query(context.Background(), query, searchTerm)
+        defer rows.Close()
+        if err != nil {
+            c.JSON(400, gin.H{"error":err.Error()})   
+            return
+        }
+
+        persons, err := pgx.CollectRows(rows, pgx.RowToStructByName[readPerson])
+        if err != nil {
+            c.JSON(400, gin.H{"error":err.Error()})   
+            return
+        }
+
+        c.JSON(http.StatusOK, persons)
     })
 
     r.GET("/contagem-pessoas", func(c *gin.Context) {
