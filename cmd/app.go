@@ -125,18 +125,17 @@ func main() {
     r.GET("/pessoas", func(c *gin.Context) {
         // pessoas := []pessoa
         searchTerm := c.Query("t")
-        // var searchResult string
-        query := `select * from person where id like '%'||$1||'%' OR name like %$1% OR nickname like %$1%`
+        query := `select * from person where name ilike '%'||$1||'%' OR nickname ilike '%'||$1||'%' OR stack ~* ANY(||$1||)`
         rows, err := conn.Query(context.Background(), query, searchTerm)
         defer rows.Close()
         if err != nil {
-            c.JSON(400, gin.H{"error":err.Error()})   
+            c.JSON(400, gin.H{"error1":err.Error()})   
             return
         }
 
         persons, err := pgx.CollectRows(rows, pgx.RowToStructByName[readPerson])
         if err != nil {
-            c.JSON(400, gin.H{"error":err.Error()})   
+            c.JSON(400, gin.H{"error2":err.Error()})   
             return
         }
 

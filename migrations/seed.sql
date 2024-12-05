@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS person (
 			nickname varchar(32) PRIMARY KEY NOT NULL,
 			"name" varchar(100) NOT NULL,
 			birthday varchar(10) NULL,
-			stacks character varying[] NULL);
+			stacks varchar[] NULL);
 
 
 -- ALTER TABLE person ADD COLUMN tssearch tsvector GENERATED ALWAYS AS (pg_catalog.to_tsvector('english', name || ' ' || nickname || ' ' || stacks)) STORED;
