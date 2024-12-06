@@ -125,7 +125,7 @@ func main() {
     r.GET("/pessoas", func(c *gin.Context) {
         // pessoas := []pessoa
         searchTerm := c.Query("t")
-        query := `select * from person where name ilike '%'||$1||'%' OR nickname ilike '%'||$1||'%' OR stack ~* ANY(||$1||)`
+        query := `select * from person where name ilike '%'||$1||'%' OR nickname ilike '%'||$1||'%' OR $1 = ANY(stacks)`
         rows, err := conn.Query(context.Background(), query, searchTerm)
         defer rows.Close()
         if err != nil {
