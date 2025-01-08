@@ -3,10 +3,12 @@ package main
 import (
     "fmt"
     "os"
+    "time"
     "context"
     "net/http"
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5"
+    "github.com/jackc/pgx/v5/pgxpool"
     "github.com/google/uuid"
 )
 
@@ -56,18 +58,31 @@ func main() {
     r := gin.Default()
     connectionString := os.Getenv("DATABASE_URL")
 
-    conn, err := pgx.Connect(context.Background(), connectionString)
+    config, err := pgxpool.ParseConfig(connectionString)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Unable to parse pool config: %v\n", err)
+        os.Exit(1)
+    }
+
+    config.MaxConns = 20
+    config.MinConns = 0
+    config.MaxConnLifetime = 30 * time.Minute
+    config.MaxConnIdleTime = 5 * time.Minute
+    config.HealthCheckPeriod = time.Minute
+
+    conn, err := pgxpool.NewWithConfig(context.Background(), config)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
         os.Exit(1)
     }
-    defer conn.Close(context.Background())
+    defer conn.Close()
 
     r.POST("/pessoas", func(c *gin.Context){
         var newPerson createPerson
         uid := uuid.NewString()
 
         if err := c.BindJSON(&newPerson); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{ "error": "Invalid json", })
             return
         }
 
@@ -94,8 +109,8 @@ func main() {
 
     r.GET("/pessoas/:id", func(c *gin.Context) {
         id := c.Param("id")
-        if err := c.ShouldBindUri(&id); err != nil {
-            c.JSON(400, gin.H{"error":err.Error()})
+        if id == "" {
+            c.JSON(400, gin.H{"error":"Id should not be null"})
             return
         }
 
@@ -127,15 +142,15 @@ func main() {
         searchTerm := c.Query("t")
         query := `select * from person where name ilike '%'||$1||'%' OR nickname ilike '%'||$1||'%' OR $1 = ANY(stacks)`
         rows, err := conn.Query(context.Background(), query, searchTerm)
-        defer rows.Close()
         if err != nil {
-            c.JSON(400, gin.H{"error1":err.Error()})   
+            c.JSON(400, gin.H{"Error":err.Error()})   
             return
         }
+        defer rows.Close()
 
         persons, err := pgx.CollectRows(rows, pgx.RowToStructByName[readPerson])
         if err != nil {
-            c.JSON(400, gin.H{"error2":err.Error()})   
+            c.JSON(400, gin.H{"Error":err.Error()})   
             return
         }
 
@@ -144,11 +159,12 @@ func main() {
 
     r.GET("/contagem-pessoas", func(c *gin.Context) {
         var total int64
-        err = conn.QueryRow(context.Background(), "select count(*) from person").Scan(&total)
+        err := conn.QueryRow(context.Background(), "select count(*) from person").Scan(&total)
         if err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{ "error": err, })
+            c.JSON(http.StatusBadRequest, gin.H{ "error": err.Error()})
+        } else {
+            c.String(http.StatusOK, fmt.Sprintf("%d", total))
         }
-        c.String(http.StatusOK, fmt.Sprintf("%d", total))
     })
 
     r.Run(":80")
